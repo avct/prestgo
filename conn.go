@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Name of the driver to use when calling `sql.Open`
@@ -185,6 +186,8 @@ func (r *rows) fetch() error {
 
 	r.rowindex = 0
 	r.data = qresp.Data
+
+	// Note: qresp.Stats.State will be FINISHED when last page is retrieved
 	r.nextURI = qresp.NextURI
 
 	if !r.fetched {
@@ -202,6 +205,8 @@ func (r *rows) fetch() error {
 				r.types[i] = driver.Bool
 			case Double:
 				r.types[i] = doubleConverter
+			case Timestamp:
+				r.types[i] = timestampConverter
 
 			default:
 				return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -296,5 +301,15 @@ var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, er
 	if vv, ok := val.(float64); ok {
 		return vv, nil
 	}
-	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type int64", DriverName, val, val)
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type float64", DriverName, val, val)
+})
+
+// timestampConverter converts a value from the underlying json response into a time.Time.
+var timestampConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if vv, ok := val.(string); ok {
+		// BUG: should parse using session time zone.
+		ts, err := time.ParseInLocation("2006-01-02 15:04:05.000", vv, time.Local)
+		return ts, err
+	}
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
 })
