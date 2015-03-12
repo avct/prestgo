@@ -101,6 +101,10 @@ func (s *stmt) Exec(args []driver.Value) (driver.Result, error) {
 }
 
 func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
+	// TODO: support query argument substitution
+	if len(args) > 0 {
+		return nil, ErrNotSupported
+	}
 	queryURL := fmt.Sprintf("http://%s/v1/statement", s.conn.addr)
 
 	req, err := http.NewRequest("POST", queryURL, strings.NewReader(s.query))
@@ -203,6 +207,10 @@ func (r *rows) fetch() error {
 				return fmt.Errorf("unsupported column type: %s", col.Type)
 			}
 		}
+	}
+
+	if len(qresp.Data) == 0 {
+		return io.EOF
 	}
 
 	return nil
