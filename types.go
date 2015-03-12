@@ -1,6 +1,9 @@
 package prestgo
 
 const (
+	// This type captures boolean values true and false
+	Boolean = "boolean"
+
 	// A 64-bit signed two’s complement integer with a minimum value of -2^63 and a maximum value of 2^63 - 1.
 	BigInt = "bigint"
 

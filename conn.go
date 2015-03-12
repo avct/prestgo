@@ -74,7 +74,7 @@ func (c *conn) Prepare(query string) (driver.Stmt, error) {
 }
 
 func (c *conn) Close() error {
-	panic("not implemented")
+	return nil
 }
 
 func (c *conn) Begin() (driver.Tx, error) {
@@ -115,16 +115,15 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	// Presto doesn't use the http response code, parse errors come back as 200
 	if resp.StatusCode != 200 {
-		resp.Body.Close()
 		return nil, ErrQueryFailed
 	}
 
 	var sresp stmtResponse
 	err = json.NewDecoder(resp.Body).Decode(&sresp)
-	resp.Body.Close()
 	if err != nil {
 		return nil, err
 	}
@@ -195,6 +194,10 @@ func (r *rows) fetch() error {
 				r.types[i] = driver.String
 			case BigInt:
 				r.types[i] = bigIntConverter
+			case Boolean:
+				r.types[i] = driver.Bool
+			case Double:
+				r.types[i] = doubleConverter
 
 			default:
 				return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -217,13 +220,15 @@ func (r *rows) Close() error {
 }
 
 func (r *rows) Next(dest []driver.Value) error {
-	if !r.fetched {
-		r.fetch()
+	if !r.fetched || r.rowindex >= len(r.data) {
+		if r.nextURI == "" {
+			return io.EOF
+		}
+		if err := r.fetch(); err != nil {
+			return err
+		}
 	}
 
-	if r.rowindex >= len(r.data) {
-		return io.EOF
-	}
 	for i, v := range r.types {
 		val, err := v.ConvertValue(r.data[r.rowindex][i])
 		if err != nil {
@@ -268,24 +273,20 @@ func (fn valueConverterFunc) ConvertValue(v interface{}) (driver.Value, error) {
 	return fn(v)
 }
 
+// bigIntConverter converts a value from the underlying json response into an int64.
+// The Go JSON decoder uses float64 for generic numeric values
 var bigIntConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
-	switch v := val.(type) {
-	case int64:
-		return v, nil
-	case int:
-		return int64(v), nil
-	case int32:
-		return int64(v), nil
-	case int16:
-		return int64(v), nil
-	case int8:
-		return int64(v), nil
-	case byte:
-		return int64(v), nil
-	case float64:
-		return int64(v), nil
-	case float32:
-		return int64(v), nil
+	if vv, ok := val.(float64); ok {
+		return int64(vv), nil
+	}
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type int64", DriverName, val, val)
+})
+
+// doubleConverter converts a value from the underlying json response into an int64.
+// The Go JSON decoder uses float64 for generic numeric values
+var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if vv, ok := val.(float64); ok {
+		return vv, nil
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type int64", DriverName, val, val)
 })
