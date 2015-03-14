@@ -68,6 +68,11 @@ func main() {
 }
 ```
 
+The included command line query tool `prq` can be used like this:
+
+```
+prq "presto://example:8080/hive/default" "SHOW TABLES"
+```
 
 ## Features
 
