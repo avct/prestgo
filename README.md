@@ -8,7 +8,7 @@ Simply run
 
 	go get github.com/avct/prestgo/...
 
-This will install the Presto database driver and the `prq` tool for running queries fro the command line.
+This will install the Presto database driver and the `prq` tool for running queries from the command line.
 
 Documentation is at http://godoc.org/github.com/avct/prestgo
 
