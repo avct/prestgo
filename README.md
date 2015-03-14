@@ -2,6 +2,16 @@
 
 A pure [Go](http://golang.org/) database driver for the [Presto](http://prestodb.io/) query engine.
 
+## Installation
+
+Simply run
+
+	go get github.com/avct/prestgo/...
+
+This will install the Presto database driver and the `prq` tool for running queries fro the command line.
+
+Documentation is at http://godoc.org/github.com/avct/prestgo
+
 ## Usage
 
 Prestgo conforms to the Go standard library [Driver interface](http://golang.org/pkg/database/sql/driver/#Driver). This means it works transparently with the [`database/sql`](http://golang.org/pkg/database/sql/) package. Simply import the `github.com/avct/prestgo` package to auto-register the driver:
@@ -77,16 +87,6 @@ func main() {
 * User authentication
 * `json`, `date`, `time`, `interval`, `array`, `row` and `map` datatypes
 
-
-## Installation
-
-Simply run
-
-	go get github.com/avct/prestgo/...
-
-This will install the Presto database driver and the `prq` tool for running queries fro the command line.
-
-Documentation is at http://godoc.org/github.com/avct/prestgo
 
 ## Authors
 
