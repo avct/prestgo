@@ -42,15 +42,15 @@ func (*drv) Open(name string) (driver.Conn, error) {
 }
 
 // Open creates a connection to the specified data source name which should be
-// of the form `presto://hostname:port/catalog/schema`. `http.DefaultClient` will
+// of the form "presto://hostname:port/catalog/schema". http.DefaultClient will
 // be used for communicationg with the Presto server.
 func Open(name string) (driver.Conn, error) {
 	return ClientOpen(http.DefaultClient, name)
 }
 
 // ClientOpen creates a connection to the specified data source name using the supplied
-// `http.Client`. The data source name should be of the form
-// `presto://hostname:port/catalog/schema`.
+// HTTP client. The data source name should be of the form
+// "presto://hostname:port/catalog/schema".
 func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 
 	conf := make(config)
