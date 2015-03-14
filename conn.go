@@ -24,8 +24,11 @@ const (
 )
 
 var (
+	// ErrNotSupported is returned when an unsupported feature is requested.
 	ErrNotSupported = errors.New(DriverName + ": not supported")
-	ErrQueryFailed  = errors.New(DriverName + ": query failed")
+
+	// ErrQueryFailed indicates that a network or server failure prevented the driver obtaining a query result.
+	ErrQueryFailed = errors.New(DriverName + ": query failed")
 )
 
 func init() {
@@ -38,11 +41,16 @@ func (*drv) Open(name string) (driver.Conn, error) {
 	return Open(name)
 }
 
+// Open creates a connection to the specified data source name which should be
+// of the form `presto://hostname:port/catalog/schema`. `http.DefaultClient` will
+// be used for communicationg with the Presto server.
 func Open(name string) (driver.Conn, error) {
 	return ClientOpen(http.DefaultClient, name)
 }
 
-// name is of form presto://host:port/catalog/schema
+// ClientOpen creates a connection to the specified data source name using the supplied
+// `http.Client`. The data source name should be of the form
+// `presto://hostname:port/catalog/schema`.
 func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 
 	conf := make(config)
