@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -371,5 +372,49 @@ func TestRowsNextMultiplePages(t *testing.T) {
 
 	if err := r.Next(values); err != io.EOF {
 		t.Fatalf("got %v, wanted io.EOF", err)
+	}
+}
+
+func TestDoubleConverter(t *testing.T) {
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+
+		{
+			val:      0.91,
+			expected: driver.Value(0.91),
+			err:      false,
+		},
+
+		{
+			val:      "foo",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "Infinity",
+			expected: math.Inf(1),
+			err:      false,
+		},
+		{
+			val:      "NaN",
+			expected: math.NaN(),
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := doubleConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+		if v != tc.expected {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
 	}
 }

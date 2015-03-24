@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -306,8 +307,17 @@ var bigIntConverter = valueConverterFunc(func(val interface{}) (driver.Value, er
 // doubleConverter converts a value from the underlying json response into an int64.
 // The Go JSON decoder uses float64 for generic numeric values
 var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
-	if vv, ok := val.(float64); ok {
+	switch vv := val.(type) {
+	case float64:
 		return vv, nil
+	case string:
+		switch vv {
+		case "Infinity":
+			return math.Inf(1), nil
+		case "NaN":
+			return math.NaN(), nil
+		}
+
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type float64", DriverName, val, val)
 })
