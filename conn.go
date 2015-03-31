@@ -167,32 +167,39 @@ type rows struct {
 var _ driver.Rows = &rows{}
 
 func (r *rows) fetch() error {
-	nextReq, err := http.NewRequest("GET", r.nextURI, nil)
-	if err != nil {
-		return err
-	}
-
-	nextResp, err := r.conn.client.Do(nextReq)
-	if err != nil {
-		return err
-	}
-
-	if nextResp.StatusCode != 200 {
-		nextResp.Body.Close()
-		return ErrQueryFailed
-	}
-
 	var qresp queryResponse
-	err = json.NewDecoder(nextResp.Body).Decode(&qresp)
-	nextResp.Body.Close()
-	if err != nil {
-		return err
-	}
+	for {
+		nextReq, err := http.NewRequest("GET", r.nextURI, nil)
+		if err != nil {
+			return err
+		}
 
-	if qresp.Stats.State == "FAILED" {
-		return qresp.Error
-	}
+		nextResp, err := r.conn.client.Do(nextReq)
+		if err != nil {
+			return err
+		}
 
+		if nextResp.StatusCode != 200 {
+			nextResp.Body.Close()
+			return ErrQueryFailed
+		}
+
+		err = json.NewDecoder(nextResp.Body).Decode(&qresp)
+		nextResp.Body.Close()
+		if err != nil {
+			return err
+		}
+
+		if qresp.Stats.State == "FAILED" {
+			return qresp.Error
+		}
+
+		if qresp.Stats.State == "RUNNING" || qresp.Stats.State == "FINISHED" {
+			break
+		}
+
+		time.Sleep(5 * time.Millisecond)
+	}
 	r.rowindex = 0
 	r.data = qresp.Data
 
