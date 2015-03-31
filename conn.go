@@ -198,7 +198,7 @@ func (r *rows) fetch() error {
 			break
 		}
 
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(5 * time.Second)
 	}
 	r.rowindex = 0
 	r.data = qresp.Data
