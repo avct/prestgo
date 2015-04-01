@@ -119,3 +119,18 @@ type typeSignature struct {
 	TypeArguments    []interface{} `json:"typeArguments"`
 	LiteralArguments []interface{} `json:"literalArguments"`
 }
+
+type infoResponse struct {
+	QueryID string `json:"queryId"`
+	State   string `json:"state"`
+}
+
+const (
+	QueryStateQueued   = "QUEUED"
+	QueryStatePlanning = "PLANNING"
+	QueryStateStarting = "STARTING"
+	QueryStateRunning  = "RUNNING"
+	QueryStateFinished = "FINISHED"
+	QueryStateCanceled = "CANCELED"
+	QueryStateFailed   = "FAILED"
+)

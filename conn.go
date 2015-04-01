@@ -30,6 +30,9 @@ var (
 
 	// ErrQueryFailed indicates that a network or server failure prevented the driver obtaining a query result.
 	ErrQueryFailed = errors.New(DriverName + ": query failed")
+
+	// ErrQueryCanceled indicates that a query was canceled before results could be retrieved.
+	ErrQueryCanceled = errors.New(DriverName + ": query canceled")
 )
 
 func init() {
@@ -146,6 +149,8 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 		return nil, sresp.Error
 	}
 
+	time.Sleep(500 * time.Millisecond)
+
 	r := &rows{
 		conn:    s.conn,
 		nextURI: sresp.NextURI,
@@ -167,74 +172,91 @@ type rows struct {
 var _ driver.Rows = &rows{}
 
 func (r *rows) fetch() error {
-	var qresp queryResponse
+	// TODO: timeout
 	for {
-		nextReq, err := http.NewRequest("GET", r.nextURI, nil)
+		qresp, gotData, err := r.waitForData()
 		if err != nil {
 			return err
 		}
-
-		nextResp, err := r.conn.client.Do(nextReq)
-		if err != nil {
-			return err
+		if !gotData {
+			time.Sleep(800 * time.Millisecond) // TODO: make this interval configurable
+			continue
 		}
 
-		if nextResp.StatusCode != 200 {
-			nextResp.Body.Close()
-			return ErrQueryFailed
-		}
+		r.rowindex = 0
+		r.data = qresp.Data
 
-		err = json.NewDecoder(nextResp.Body).Decode(&qresp)
-		nextResp.Body.Close()
-		if err != nil {
-			return err
-		}
+		// Note: qresp.Stats.State will be FINISHED when last page is retrieved
+		r.nextURI = qresp.NextURI
 
-		if qresp.Stats.State == "FAILED" {
-			return qresp.Error
-		}
+		if !r.fetched {
+			r.fetched = true
+			r.columns = make([]string, len(qresp.Columns))
+			r.types = make([]driver.ValueConverter, len(qresp.Columns))
+			for i, col := range qresp.Columns {
+				r.columns[i] = col.Name
+				switch col.Type {
+				case VarChar:
+					r.types[i] = driver.String
+				case BigInt:
+					r.types[i] = bigIntConverter
+				case Boolean:
+					r.types[i] = driver.Bool
+				case Double:
+					r.types[i] = doubleConverter
+				case Timestamp:
+					r.types[i] = timestampConverter
 
-		if qresp.Stats.State == "RUNNING" || qresp.Stats.State == "FINISHED" {
-			break
-		}
-
-		time.Sleep(5 * time.Second)
-	}
-	r.rowindex = 0
-	r.data = qresp.Data
-
-	// Note: qresp.Stats.State will be FINISHED when last page is retrieved
-	r.nextURI = qresp.NextURI
-
-	if !r.fetched {
-		r.fetched = true
-		r.columns = make([]string, len(qresp.Columns))
-		r.types = make([]driver.ValueConverter, len(qresp.Columns))
-		for i, col := range qresp.Columns {
-			r.columns[i] = col.Name
-			switch col.Type {
-			case VarChar:
-				r.types[i] = driver.String
-			case BigInt:
-				r.types[i] = bigIntConverter
-			case Boolean:
-				r.types[i] = driver.Bool
-			case Double:
-				r.types[i] = doubleConverter
-			case Timestamp:
-				r.types[i] = timestampConverter
-
-			default:
-				return fmt.Errorf("unsupported column type: %s", col.Type)
+				default:
+					return fmt.Errorf("unsupported column type: %s", col.Type)
+				}
 			}
 		}
+
+		if len(qresp.Data) == 0 {
+			return io.EOF
+		}
+
+		return nil
+	}
+}
+
+func (r *rows) waitForData() (*queryResponse, bool, error) {
+	nextReq, err := http.NewRequest("GET", r.nextURI, nil)
+	if err != nil {
+		return nil, false, err
 	}
 
-	if len(qresp.Data) == 0 {
-		return io.EOF
+	nextResp, err := r.conn.client.Do(nextReq)
+	if err != nil {
+		return nil, false, err
 	}
 
-	return nil
+	if nextResp.StatusCode != 200 {
+		nextResp.Body.Close()
+		return nil, false, ErrQueryFailed
+	}
+
+	var qresp queryResponse
+	err = json.NewDecoder(nextResp.Body).Decode(&qresp)
+	nextResp.Body.Close()
+	if err != nil {
+		return nil, false, err
+	}
+
+	switch qresp.Stats.State {
+	case QueryStateFailed:
+		return nil, false, qresp.Error
+	case QueryStateCanceled:
+		return nil, false, ErrQueryCanceled
+	case QueryStatePlanning, QueryStateQueued, QueryStateRunning, QueryStateStarting:
+		if len(qresp.Data) == 0 {
+			r.nextURI = qresp.NextURI
+			return nil, false, nil
+		}
+	}
+
+	return &qresp, true, nil
 }
 
 func (r *rows) Columns() []string {
