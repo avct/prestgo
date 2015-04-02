@@ -3,27 +3,32 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
+	"io"
 	"os"
 	"text/tabwriter"
 
 	_ "github.com/avct/prestgo"
 )
 
+var outformat = flag.String("o", "tabular", "set output format: tabular (default) or tsv")
+
 func main() {
-	if len(os.Args) < 2 {
+	flag.Parse()
+	if len(flag.Args()) < 1 {
 		fatal("missing required data source argument")
 	}
 
-	if len(os.Args) < 3 {
+	if len(flag.Args()) < 2 {
 		fatal("missing required query argument")
 	}
 
-	db, err := sql.Open("prestgo", os.Args[1])
+	db, err := sql.Open("prestgo", flag.Args()[0])
 	if err != nil {
 		fatal(fmt.Sprintf("failed to connect to presto: %v", err))
 	}
-	rows, err := db.Query(os.Args[2])
+	rows, err := db.Query(flag.Args()[1])
 	if err != nil {
 		fatal(fmt.Sprintf("failed query presto: %v", err))
 	}
@@ -33,10 +38,15 @@ func main() {
 	if err != nil {
 		fatal(fmt.Sprintf("failed to read columns: %v", err))
 	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
-	defer w.Flush()
-
+	var w io.Writer
+	switch *outformat {
+	case "tsv":
+		w = os.Stdout
+	default:
+		tw := tabwriter.NewWriter(os.Stdout, 0, 8, 0, '\t', 0)
+		defer tw.Flush()
+		w = tw
+	}
 	for i := range cols {
 		if i > 0 {
 			fmt.Fprint(w, "\t")
