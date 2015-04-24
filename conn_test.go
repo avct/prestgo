@@ -491,3 +491,61 @@ func TestBigIntConverter(t *testing.T) {
 
 	}
 }
+
+func TestTimestampConverter(t *testing.T) {
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+
+		{
+			val:      "2015-04-23 10:00:08.123",
+			expected: time.Date(2015, 04, 23, 10, 0, 8, int(123*time.Millisecond), time.Local),
+			err:      false,
+		},
+
+		{
+			val:      1000.0,
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "foo",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "Infinity",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "NaN",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      nil,
+			expected: nil,
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := timestampConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+
+		if v != tc.expected {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
+	}
+}

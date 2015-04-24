@@ -361,10 +361,14 @@ var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, er
 
 // timestampConverter converts a value from the underlying json response into a time.Time.
 var timestampConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
 	if vv, ok := val.(string); ok {
 		// BUG: should parse using session time zone.
-		ts, err := time.ParseInLocation("2006-01-02 15:04:05.000", vv, time.Local)
-		return ts, err
+		if ts, err := time.ParseInLocation("2006-01-02 15:04:05.000", vv, time.Local); err == nil {
+			return ts, nil
+		}
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
 })
