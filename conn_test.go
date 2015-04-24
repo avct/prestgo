@@ -399,9 +399,16 @@ func TestDoubleConverter(t *testing.T) {
 			expected: math.Inf(1),
 			err:      false,
 		},
+
 		{
 			val:      "NaN",
 			expected: math.NaN(),
+			err:      false,
+		},
+
+		{
+			val:      nil,
+			expected: nil,
 			err:      false,
 		},
 	}
@@ -412,6 +419,20 @@ func TestDoubleConverter(t *testing.T) {
 		if tc.err == (err == nil) {
 			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
 		}
+
+		if ef, ok := tc.expected.(float64); ok && math.IsNaN(ef) {
+			vf, ok := v.(float64)
+			if !ok {
+				t.Errorf("%v: got type %T, wanted a float64", tc.val, v)
+				continue
+			}
+
+			if !math.IsNaN(vf) {
+				t.Errorf("%v: wanted NaN", tc.val)
+			}
+			continue
+		}
+
 		if v != tc.expected {
 			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
 		}

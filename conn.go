@@ -336,6 +336,10 @@ var bigIntConverter = valueConverterFunc(func(val interface{}) (driver.Value, er
 // doubleConverter converts a value from the underlying json response into an int64.
 // The Go JSON decoder uses float64 for generic numeric values
 var doubleConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
 	switch vv := val.(type) {
 	case float64:
 		return vv, nil
