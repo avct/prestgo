@@ -439,3 +439,55 @@ func TestDoubleConverter(t *testing.T) {
 
 	}
 }
+
+func TestBigIntConverter(t *testing.T) {
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+
+		{
+			val:      1000.0,
+			expected: driver.Value(int64(1000)),
+			err:      false,
+		},
+
+		{
+			val:      "foo",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "Infinity",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "NaN",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      nil,
+			expected: nil,
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := bigIntConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+
+		if v != tc.expected {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
+	}
+}
