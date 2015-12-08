@@ -21,37 +21,67 @@ func TestConfigParseDataSource(t *testing.T) {
 
 		{
 			ds:       "",
-			expected: config{"addr": ":8080", "catalog": "hive", "schema": "default"},
+			expected: config{"addr": ":8080", "catalog": "hive", "schema": "default", "user": "prestgo"},
 			error:    false,
 		},
 
 		{
 			ds:       "presto://example:9000/",
-			expected: config{"addr": "example:9000", "catalog": "hive", "schema": "default"},
+			expected: config{"addr": "example:9000", "catalog": "hive", "schema": "default", "user": "prestgo"},
 			error:    false,
 		},
 
 		{
 			ds:       "presto://example/",
-			expected: config{"addr": "example:8080", "catalog": "hive", "schema": "default"},
+			expected: config{"addr": "example:8080", "catalog": "hive", "schema": "default", "user": "prestgo"},
 			error:    false,
 		},
 
 		{
 			ds:       "presto://example/tree",
-			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "default"},
+			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "default", "user": "prestgo"},
 			error:    false,
 		},
 
 		{
 			ds:       "presto://example/tree/",
-			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "default"},
+			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "default", "user": "prestgo"},
 			error:    false,
 		},
 
 		{
 			ds:       "presto://example/tree/birch",
-			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "birch"},
+			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "birch", "user": "prestgo"},
+			error:    false,
+		},
+
+		{
+			ds:       "presto://name@example/",
+			expected: config{"addr": "example:8080", "catalog": "hive", "schema": "default", "user": "name"},
+			error:    false,
+		},
+
+		{
+			ds:       "presto://name:pwd@example/",
+			expected: config{"addr": "example:8080", "catalog": "hive", "schema": "default", "user": "name"},
+			error:    false,
+		},
+
+		{
+			ds:       "presto://name@example:9000/",
+			expected: config{"addr": "example:9000", "catalog": "hive", "schema": "default", "user": "name"},
+			error:    false,
+		},
+
+		{
+			ds:       "presto://name:pwd@example:9000/",
+			expected: config{"addr": "example:9000", "catalog": "hive", "schema": "default", "user": "name"},
+			error:    false,
+		},
+
+		{
+			ds:       "presto://name@example/tree/birch",
+			expected: config{"addr": "example:8080", "catalog": "tree", "schema": "birch", "user": "name"},
 			error:    false,
 		},
 	}

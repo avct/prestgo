@@ -26,7 +26,7 @@ If you don't intend to use any prestgo-specific functions directly, you can impo
 import _ "github.com/avct/prestgo"
 ```
 
-The driver name is `prestgo` and it supports the standard Presto data source name format `presto://hostname:port/catalog/schema`. All parts of the data source name are optional, defaulting to port 8080 on localhost with `hive` catalog and `default` schema.
+The driver name is `prestgo` and it supports the standard Presto data source name format `presto://user@hostname:port/catalog/schema`. All parts of the data source name are optional, defaulting to port 8080 on localhost with `hive` catalog, `default` schema and a user of `prestgo`.
 
 Here's how to get a list of tables from a Presto server:
 
