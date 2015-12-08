@@ -19,9 +19,10 @@ const DriverName = "prestgo"
 
 // Default data source parameters
 const (
-	DefaultPort    = "8080"
-	DefaultCatalog = "hive"
-	DefaultSchema  = "default"
+	DefaultPort     = "8080"
+	DefaultCatalog  = "hive"
+	DefaultSchema   = "default"
+	DefaultUsername = "prestgo"
 )
 
 var (
@@ -47,7 +48,7 @@ func (*drv) Open(name string) (driver.Conn, error) {
 
 // Open creates a connection to the specified data source name which should be
 // of the form "presto://hostname:port/catalog/schema". http.DefaultClient will
-// be used for communicationg with the Presto server.
+// be used for communicating with the Presto server.
 func Open(name string) (driver.Conn, error) {
 	return ClientOpen(http.DefaultClient, name)
 }
@@ -65,6 +66,7 @@ func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 		addr:    conf["addr"],
 		catalog: conf["catalog"],
 		schema:  conf["schema"],
+		user:    conf["user"],
 	}
 	return cn, nil
 }
@@ -74,6 +76,7 @@ type conn struct {
 	addr    string
 	catalog string
 	schema  string
+	user    string
 }
 
 var _ driver.Conn = &conn{}
@@ -124,7 +127,7 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("X-Presto-User", "default")
+	req.Header.Add("X-Presto-User", s.conn.user)
 	req.Header.Add("X-Presto-Catalog", s.conn.catalog)
 	req.Header.Add("X-Presto-Schema", s.conn.schema)
 
@@ -297,6 +300,12 @@ func (c config) parseDataSource(ds string) error {
 	u, err := url.Parse(ds)
 	if err != nil {
 		return err
+	}
+
+	if u.User != nil {
+		c["user"] = u.User.Username()
+	} else {
+		c["user"] = DefaultUsername
 	}
 
 	if strings.IndexRune(u.Host, ':') == -1 {
