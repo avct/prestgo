@@ -150,10 +150,11 @@ var supportedDatatypesResponse = http.HandlerFunc(func(w http.ResponseWriter, r 
 		    { "name": "col1", "type": "bigint", "typeSignature": { "rawType": "varchar", "typeArguments": [], "literalArguments": [] } },
 		    { "name": "col2", "type": "double", "typeSignature": { "rawType": "varchar", "typeArguments": [], "literalArguments": [] } },
 		    { "name": "col3", "type": "boolean", "typeSignature": { "rawType": "varchar", "typeArguments": [], "literalArguments": [] } },
-		    { "name": "col4", "type": "timestamp", "typeSignature": { "rawType": "varchar", "typeArguments": [], "literalArguments": [] } }
+		    { "name": "col4", "type": "timestamp", "typeSignature": { "rawType": "varchar", "typeArguments": [], "literalArguments": [] } },
+		    { "name": "col5", "type": "integer", "typeSignature": { "rawType": "integer", "typeArguments": [], "literalArguments": [] } }
 		  ],
 		  "data": [
-		    [ "c0r0", 12345, 12.45, true, "2015-02-09 18:26:02.013" ]
+		    [ "c0r0", 12345, 12.45, true, "2015-02-09 18:26:02.013", 12 ]
 		  ]
 		}`, r.Host))
 	default:
@@ -302,7 +303,7 @@ func TestRowsFetchSupportedTypes(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	expected := []interface{}{"c0r0", int64(12345), float64(12.45), true, time.Date(2015, 2, 9, 18, 26, 02, 13000000, time.Local)}
+	expected := []interface{}{"c0r0", int64(12345), float64(12.45), true, time.Date(2015, 2, 9, 18, 26, 02, 13000000, time.Local), int64(12)}
 
 	if len(values) != len(expected) {
 		t.Fatalf("got %d values, wanted %d", len(values), len(expected))

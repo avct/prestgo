@@ -193,7 +193,6 @@ func (r *rows) fetch() error {
 		r.nextURI = qresp.NextURI
 
 		if !r.fetched {
-			r.fetched = true
 			r.columns = make([]string, len(qresp.Columns))
 			r.types = make([]driver.ValueConverter, len(qresp.Columns))
 			for i, col := range qresp.Columns {
@@ -201,7 +200,7 @@ func (r *rows) fetch() error {
 				switch col.Type {
 				case VarChar:
 					r.types[i] = driver.String
-				case BigInt:
+				case BigInt, Integer:
 					r.types[i] = bigIntConverter
 				case Boolean:
 					r.types[i] = driver.Bool
@@ -214,6 +213,7 @@ func (r *rows) fetch() error {
 					return fmt.Errorf("unsupported column type: %s", col.Type)
 				}
 			}
+			r.fetched = true
 		}
 
 		if len(qresp.Data) == 0 {
@@ -264,7 +264,9 @@ func (r *rows) waitForData() (*queryResponse, bool, error) {
 
 func (r *rows) Columns() []string {
 	if !r.fetched {
-		r.fetch()
+		if err := r.fetch(); err != nil {
+			return []string{}
+		}
 	}
 	return r.columns
 }
