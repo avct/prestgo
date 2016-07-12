@@ -23,6 +23,8 @@ const (
 	DefaultCatalog  = "hive"
 	DefaultSchema   = "default"
 	DefaultUsername = "prestgo"
+
+	TimestampFormat = "2006-01-02 15:04:05.000"
 )
 
 var (
@@ -208,6 +210,8 @@ func (r *rows) fetch() error {
 					r.types[i] = doubleConverter
 				case Timestamp:
 					r.types[i] = timestampConverter
+				case TimestampWithTimezone:
+					r.types[i] = timestampWithTimezoneConverter
 
 				default:
 					return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -377,9 +381,35 @@ var timestampConverter = valueConverterFunc(func(val interface{}) (driver.Value,
 	}
 	if vv, ok := val.(string); ok {
 		// BUG: should parse using session time zone.
-		if ts, err := time.ParseInLocation("2006-01-02 15:04:05.000", vv, time.Local); err == nil {
+		if ts, err := time.ParseInLocation(TimestampFormat, vv, time.Local); err == nil {
 			return ts, nil
 		}
+	}
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
+})
+
+// timestampWithTimezoneConverter converts a value from the underlying json response into a time.Time including timezone.
+var timestampWithTimezoneConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+	if vv, ok := val.(string); ok {
+		if len(vv) <= len(TimestampFormat) {
+			return timestampConverter(val)
+		}
+		tzOffset := strings.LastIndex(vv, " ")
+		if tzOffset == -1 {
+			return timestampConverter(val)
+		}
+		tz, err := time.LoadLocation(strings.TrimSpace(vv[tzOffset:]))
+		if err != nil {
+			return nil, err
+		}
+		ts, err := time.ParseInLocation(TimestampFormat, vv[:tzOffset], tz)
+		if err != nil {
+			return nil, err
+		}
+		return ts, nil
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
 })

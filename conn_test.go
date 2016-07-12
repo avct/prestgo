@@ -580,3 +580,90 @@ func TestTimestampConverter(t *testing.T) {
 
 	}
 }
+
+func TestTimestampWithTimezoneConverter(t *testing.T) {
+	europeLondon, err := time.LoadLocation("Europe/London")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+
+		{
+			val:      "2015-04-23 10:00:08.123 UTC",
+			expected: time.Date(2015, 04, 23, 10, 0, 8, int(123*time.Millisecond), time.UTC),
+			err:      false,
+		},
+
+		{
+			val:      "2015-04-23 10:00:08.123 Europe/London",
+			expected: time.Date(2015, 04, 23, 10, 0, 8, int(123*time.Millisecond), europeLondon),
+			err:      false,
+		},
+
+		{
+			val:      "2015-04-23 10:00:08.123",
+			expected: time.Date(2015, 04, 23, 10, 0, 8, int(123*time.Millisecond), time.Local),
+			err:      false,
+		},
+
+		{
+			val:      "2015-04-23 10:00:08.123 ",
+			expected: time.Date(2015, 04, 23, 10, 0, 8, int(123*time.Millisecond), time.UTC),
+			err:      false,
+		},
+
+		{
+			val:      "2015-04-23 10:00:08.123 Nowhere",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      1000.0,
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "foo",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "Infinity",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      "NaN",
+			expected: nil,
+			err:      true,
+		},
+
+		{
+			val:      nil,
+			expected: nil,
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := timestampWithTimezoneConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+
+		if !reflect.DeepEqual(v, tc.expected) {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
+	}
+}
