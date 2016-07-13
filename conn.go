@@ -197,16 +197,16 @@ func (r *rows) fetch() error {
 			r.types = make([]driver.ValueConverter, len(qresp.Columns))
 			for i, col := range qresp.Columns {
 				r.columns[i] = col.Name
-				switch col.Type {
-				case VarChar:
+				switch {
+				case strings.HasPrefix(col.Type, VarChar):
 					r.types[i] = driver.String
-				case BigInt, Integer:
+				case col.Type == BigInt, col.Type == Integer:
 					r.types[i] = bigIntConverter
-				case Boolean:
+				case col.Type == Boolean:
 					r.types[i] = driver.Bool
-				case Double:
+				case col.Type == Double:
 					r.types[i] = doubleConverter
-				case Timestamp:
+				case col.Type == Timestamp:
 					r.types[i] = timestampConverter
 
 				default:
