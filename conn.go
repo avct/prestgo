@@ -210,7 +210,7 @@ func (r *rows) fetch() error {
 					r.types[i] = doubleConverter
 				case col.Type == Timestamp:
 					r.types[i] = timestampConverter
-				case TimestampWithTimezone:
+				case col.Type == TimestampWithTimezone:
 					r.types[i] = timestampWithTimezoneConverter
 
 				default:
