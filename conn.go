@@ -49,7 +49,7 @@ func (*drv) Open(name string) (driver.Conn, error) {
 }
 
 // Open creates a connection to the specified data source name which should be
-// of the form "presto://hostname:port/catalog/schema". http.DefaultClient will
+// of the form "presto://hostname:port/catalog/schema/source/session". http.DefaultClient will
 // be used for communicating with the Presto server.
 func Open(name string) (driver.Conn, error) {
 	return ClientOpen(http.DefaultClient, name)
@@ -57,7 +57,7 @@ func Open(name string) (driver.Conn, error) {
 
 // ClientOpen creates a connection to the specified data source name using the supplied
 // HTTP client. The data source name should be of the form
-// "presto://hostname:port/catalog/schema".
+// "presto://hostname:port/catalog/schema/source/session".
 func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 
 	conf := make(config)
@@ -69,6 +69,8 @@ func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 		catalog: conf["catalog"],
 		schema:  conf["schema"],
 		user:    conf["user"],
+        source:  conf["source"],
+        session:  conf["session"],
 	}
 	return cn, nil
 }
@@ -79,6 +81,8 @@ type conn struct {
 	catalog string
 	schema  string
 	user    string
+	source  string
+	session string
 }
 
 var _ driver.Conn = &conn{}
@@ -132,6 +136,12 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	req.Header.Add("X-Presto-User", s.conn.user)
 	req.Header.Add("X-Presto-Catalog", s.conn.catalog)
 	req.Header.Add("X-Presto-Schema", s.conn.schema)
+    if s.conn.source != "" {
+	    req.Header.Add("X-Presto-Source", s.conn.source)
+    }
+    if s.conn.session != "" {
+	    req.Header.Add("X-Presto-Session", s.conn.session)
+    }
 
 	resp, err := s.conn.client.Do(req)
 	if err != nil {
@@ -322,13 +332,19 @@ func (c config) parseDataSource(ds string) error {
 
 	c["catalog"] = DefaultCatalog
 	c["schema"] = DefaultSchema
-
-	pathSegments := strings.FieldsFunc(u.Path, func(c rune) bool { return c == '/' })
-	if len(pathSegments) > 0 {
+    
+	pathSegments := strings.SplitN(strings.Trim(u.Path, "/"), "/", -1)
+	if len(pathSegments) > 0 && pathSegments[0] != "" {
 		c["catalog"] = pathSegments[0]
 	}
-	if len(pathSegments) > 1 {
+	if len(pathSegments) > 1 && pathSegments[1] != "" {
 		c["schema"] = pathSegments[1]
+	}
+	if len(pathSegments) > 2 {
+		c["source"] = pathSegments[2]
+	}
+	if len(pathSegments) > 3 {
+		c["session"] = pathSegments[3]
 	}
 	return nil
 }
