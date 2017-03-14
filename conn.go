@@ -69,8 +69,8 @@ func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 		catalog: conf["catalog"],
 		schema:  conf["schema"],
 		user:    conf["user"],
-        source:  conf["source"],
-        session:  conf["session"],
+		source:  conf["source"],
+		session:  conf["session"],
 	}
 	return cn, nil
 }
@@ -136,12 +136,12 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	req.Header.Add("X-Presto-User", s.conn.user)
 	req.Header.Add("X-Presto-Catalog", s.conn.catalog)
 	req.Header.Add("X-Presto-Schema", s.conn.schema)
-    if s.conn.source != "" {
-        req.Header.Add("X-Presto-Source", s.conn.source)
-    }
-    if s.conn.session != "" {
-        req.Header.Add("X-Presto-Session", s.conn.session)
-    }
+	if s.conn.source != "" {
+		req.Header.Add("X-Presto-Source", s.conn.source)
+	}
+	if s.conn.session != "" {
+		req.Header.Add("X-Presto-Session", s.conn.session)
+	}
 
 	resp, err := s.conn.client.Do(req)
 	if err != nil {
