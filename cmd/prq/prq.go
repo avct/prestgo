@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"text/tabwriter"
 
@@ -13,6 +14,7 @@ import (
 )
 
 var outformat = flag.String("o", "tabular", "set output format: tabular (default) or tsv")
+var queryfile = flag.String("q", "", "read query from file")
 
 func main() {
 	flag.Parse()
@@ -20,17 +22,34 @@ func main() {
 		fatal("missing required data source argument")
 	}
 
-	if len(flag.Args()) < 2 {
+	if len(flag.Args()) < 2 && *queryfile == "" {
 		fatal("missing required query argument")
+	}
+
+	var query string
+	if *queryfile != "" {
+		qf, err := os.Open(*queryfile)
+		if err != nil {
+			fatal(fmt.Sprintf("failed to read query: %v", err))
+		}
+		defer qf.Close()
+		qbytes, err := ioutil.ReadAll(qf)
+		if err != nil {
+			fatal(fmt.Sprintf("failed to read query: %v", err))
+		}
+		query = string(qbytes)
+
+	} else {
+		query = flag.Args()[1]
 	}
 
 	db, err := sql.Open("prestgo", flag.Args()[0])
 	if err != nil {
 		fatal(fmt.Sprintf("failed to connect to presto: %v", err))
 	}
-	rows, err := db.Query(flag.Args()[1])
+	rows, err := db.Query(query)
 	if err != nil {
-		fatal(fmt.Sprintf("failed query presto: %v", err))
+		fatal(fmt.Sprintf("failed to query presto: %v", err))
 	}
 	defer rows.Close()
 
