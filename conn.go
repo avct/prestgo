@@ -137,10 +137,10 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 	req.Header.Add("X-Presto-Catalog", s.conn.catalog)
 	req.Header.Add("X-Presto-Schema", s.conn.schema)
     if s.conn.source != "" {
-	    req.Header.Add("X-Presto-Source", s.conn.source)
+        req.Header.Add("X-Presto-Source", s.conn.source)
     }
     if s.conn.session != "" {
-	    req.Header.Add("X-Presto-Session", s.conn.session)
+        req.Header.Add("X-Presto-Session", s.conn.session)
     }
 
 	resp, err := s.conn.client.Do(req)
@@ -332,7 +332,7 @@ func (c config) parseDataSource(ds string) error {
 
 	c["catalog"] = DefaultCatalog
 	c["schema"] = DefaultSchema
-    
+
 	pathSegments := strings.SplitN(strings.Trim(u.Path, "/"), "/", -1)
 	if len(pathSegments) > 0 && pathSegments[0] != "" {
 		c["catalog"] = pathSegments[0]
