@@ -1,8 +1,10 @@
 package prestgo
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -412,4 +414,26 @@ var timestampWithTimezoneConverter = valueConverterFunc(func(val interface{}) (d
 		return ts, nil
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
+})
+
+// varbinaryConverter converts varbinary to a byte slice
+var varbinaryConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	// varbinary values are returned as base64 encoded strings
+	if vv, ok := val.(string); ok {
+		// decode the base64 string into a byte slice
+		dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(vv))
+
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, dec); err != nil {
+			return nil, fmt.Errorf("failed to decode base64 string: %s: %s", vv, err)
+		}
+
+		return buf.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type []byte", DriverName, val, val)
 })
