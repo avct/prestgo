@@ -1,0 +1,10 @@
+language: go
+go_import_path: github.com/avct/prestgo
+go:
+  - 1.6.x
+  - 1.7.x
+  - 1.8
+
+script:
+  - go test github.com/avct/prestgo/...
+  - go test -race github.com/avct/prestgo/...
