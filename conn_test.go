@@ -85,7 +85,7 @@ func TestConfigParseDataSource(t *testing.T) {
 			error:    false,
 		},
 		{
-			ds:       "presto://name@example:9000/tree/birch/leaf",
+			ds:       "presto://name@example:9000/tree/birch?source=leaf",
 			expected: config{"addr": "example:9000", "catalog": "tree", "schema": "birch", "user": "name", "source": "leaf"},
 			error:    false,
 		},
