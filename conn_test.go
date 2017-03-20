@@ -94,11 +94,6 @@ func TestConfigParseDataSource(t *testing.T) {
 			expected: config{"addr": "example:9000", "catalog": "tree", "schema": "birch", "user": "name", "source": "leaf", "session":"flower"},
 			error:    false,
 		},
-		{
-			ds:       "presto://name@example:9000/tree?session=\"flower\"",
-			expected: config{"addr": "example:9000", "catalog": "tree", "schema": "birch", "user": "name", "session": "flower"},
-			error:    false,
-		},
 	}
 
 	for _, tc := range testCases {
