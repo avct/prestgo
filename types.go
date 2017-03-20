@@ -40,6 +40,9 @@ const (
 
 	// MapVarchar is a map from string-keys to string-values.
 	MapVarchar = "map(varchar,varchar)"
+
+	// Array of variable length character data.
+	ArrayVarchar = "array(varchar)"
 )
 
 type stmtResponse struct {

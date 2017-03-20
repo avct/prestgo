@@ -218,6 +218,8 @@ func (r *rows) fetch() error {
 					r.types[i] = mapVarcharConverter
 				case col.Type == VarBinary:
 					r.types[i] = varbinaryConverter
+				case col.Type == ArrayVarchar:
+					r.types[i] = arrayVarcharConverter
 
 				default:
 					return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -464,4 +466,28 @@ var mapVarcharConverter = valueConverterFunc(func(val interface{}) (driver.Value
 	}
 
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type map[string]string", DriverName, val, val)
+})
+
+// arrayVarcharConverter converts a value from the underlying json response into an []string
+var arrayVarcharConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	if vv, ok := val.([]interface{}); ok {
+		var outSlice []string
+
+		for _, v := range vv {
+			vstr, ok := v.(string)
+			if !ok {
+				return nil, fmt.Errorf("unexpected non-string value in array<varchar>: %v", v)
+			}
+
+			outSlice = append(outSlice, vstr)
+		}
+
+		return outSlice, nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type []string", DriverName, val, val)
 })

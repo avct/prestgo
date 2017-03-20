@@ -745,3 +745,45 @@ func TestMapVarcharConverter(t *testing.T) {
 
 	}
 }
+
+func TestArrayVarcharConverter(t *testing.T) {
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+		{
+			val:      []interface{}{"testVal1", "testVal2"},
+			expected: []string{"testVal1", "testVal2"},
+			err:      false,
+		},
+		{
+			val:      []interface{}{1, 2},
+			expected: nil,
+			err:      true,
+		},
+		{
+			val:      "InvalidArray",
+			expected: nil,
+			err:      true,
+		},
+		{
+			val:      nil,
+			expected: nil,
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := arrayVarcharConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+
+		if !reflect.DeepEqual(v, tc.expected) {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
+	}
+}
