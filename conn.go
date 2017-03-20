@@ -335,16 +335,16 @@ func (c config) parseDataSource(ds string) error {
 
 
 	pathSegments := strings.FieldsFunc(u.Path, func(c rune) bool { return c == '/' })
-	if len(pathSegments) > 0 && pathSegments[0] != "" {
+	if len(pathSegments) > 0 {
 		c["catalog"] = pathSegments[0]
 	}
-	if len(pathSegments) > 1 && pathSegments[1] != "" {
+	if len(pathSegments) > 1 {
 		c["schema"] = pathSegments[1]
 	}
 
 	m, _ := url.ParseQuery(u.RawQuery)
 	for k, v := range m {
-		c[k] = strings.Replace(strings.Join(v, ","), "\"", "", -1)
+		c[k] = strings.Join(v, ",")
 	}
 	return nil
 }
