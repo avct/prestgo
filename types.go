@@ -37,6 +37,9 @@ const (
 	// Instant in time that includes the date and time of day with a time zone. Values of this type are parsed and rendered in the provided time zone.
 	// Example: TIMESTAMP '2001-08-22 03:04:05.321' AT TIME ZONE 'America/Los_Angeles'
 	TimestampWithTimezone = "timestamp with time zone"
+
+	// MapVarchar is a map from string-keys to string-values.
+	MapVarchar = "map(varchar,varchar)"
 )
 
 type stmtResponse struct {

@@ -214,6 +214,10 @@ func (r *rows) fetch() error {
 					r.types[i] = timestampConverter
 				case col.Type == TimestampWithTimezone:
 					r.types[i] = timestampWithTimezoneConverter
+				case col.Type == MapVarchar:
+					r.types[i] = mapVarcharConverter
+				case col.Type == VarBinary:
+					r.types[i] = varbinaryConverter
 
 				default:
 					return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -436,4 +440,28 @@ var varbinaryConverter = valueConverterFunc(func(val interface{}) (driver.Value,
 	}
 
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type []byte", DriverName, val, val)
+})
+
+// mapVarcharConverter converts a value from map[string]interface{} into a map[string]string.
+var mapVarcharConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	if vv, ok := val.(map[string]interface{}); ok {
+		// All map values should be strings
+		outMap := map[string]string{}
+
+		for k, v := range vv {
+			vstr, ok := v.(string)
+			if !ok {
+				return nil, fmt.Errorf("unexpected non-string value in map<varchar,varchar>: %v", v)
+			}
+			outMap[k] = vstr
+		}
+
+		return outMap, nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type map[string]string", DriverName, val, val)
 })

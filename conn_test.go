@@ -708,3 +708,40 @@ func TestVarBinaryConverter(t *testing.T) {
 		}
 	}
 }
+
+func TestMapVarcharConverter(t *testing.T) {
+	testCases := []struct {
+		val      interface{}
+		expected driver.Value
+		err      bool
+	}{
+		{
+			val:      map[string]interface{}{"testKey": "testVal"},
+			expected: map[string]string{"testKey": "testVal"},
+			err:      false,
+		},
+		{
+			val:      "InvalidMap",
+			expected: nil,
+			err:      true,
+		},
+		{
+			val:      nil,
+			expected: nil,
+			err:      false,
+		},
+	}
+
+	for _, tc := range testCases {
+		v, err := mapVarcharConverter(tc.val)
+
+		if tc.err == (err == nil) {
+			t.Errorf("%v: got error %v, wanted %v", tc.val, err, tc.err)
+		}
+
+		if !reflect.DeepEqual(v, tc.expected) {
+			t.Errorf("%v: got %v, wanted %v", tc.val, v, tc.expected)
+		}
+
+	}
+}
