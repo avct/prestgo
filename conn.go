@@ -49,7 +49,7 @@ func (*drv) Open(name string) (driver.Conn, error) {
 }
 
 // Open creates a connection to the specified data source name which should be
-// of the form "presto://hostname:port/catalog/schema/source/session". http.DefaultClient will
+// of the form "presto://hostname:port/catalog/schema/source=x/session=y". http.DefaultClient will
 // be used for communicating with the Presto server.
 func Open(name string) (driver.Conn, error) {
 	return ClientOpen(http.DefaultClient, name)
@@ -57,7 +57,7 @@ func Open(name string) (driver.Conn, error) {
 
 // ClientOpen creates a connection to the specified data source name using the supplied
 // HTTP client. The data source name should be of the form
-// "presto://hostname:port/catalog/schema/source/session".
+// "presto://hostname:port/catalog/schema/source=x/session=y".
 func ClientOpen(client *http.Client, name string) (driver.Conn, error) {
 
 	conf := make(config)
@@ -333,18 +333,18 @@ func (c config) parseDataSource(ds string) error {
 	c["catalog"] = DefaultCatalog
 	c["schema"] = DefaultSchema
 
-	pathSegments := strings.SplitN(strings.Trim(u.Path, "/"), "/", -1)
+
+	pathSegments := strings.FieldsFunc(u.Path, func(c rune) bool { return c == '/' })
 	if len(pathSegments) > 0 && pathSegments[0] != "" {
 		c["catalog"] = pathSegments[0]
 	}
 	if len(pathSegments) > 1 && pathSegments[1] != "" {
 		c["schema"] = pathSegments[1]
 	}
-	if len(pathSegments) > 2 {
-		c["source"] = pathSegments[2]
-	}
-	if len(pathSegments) > 3 {
-		c["session"] = pathSegments[3]
+
+	m, _ := url.ParseQuery(u.RawQuery)
+	for k, v := range m {
+		c[k] = strings.Replace(strings.Join(v, ","), "\"", "", -1)
 	}
 	return nil
 }

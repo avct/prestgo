@@ -90,12 +90,12 @@ func TestConfigParseDataSource(t *testing.T) {
 			error:    false,
 		},
 		{
-			ds:       "presto://name@example:9000/tree/birch/leaf/flower",
+			ds:       "presto://name@example:9000/tree/birch?source=leaf&session=flower",
 			expected: config{"addr": "example:9000", "catalog": "tree", "schema": "birch", "user": "name", "source": "leaf", "session":"flower"},
 			error:    false,
 		},
 		{
-			ds:       "presto://name@example:9000/tree/birch//flower",
+			ds:       "presto://name@example:9000/tree?session=\"flower\"",
 			expected: config{"addr": "example:9000", "catalog": "tree", "schema": "birch", "user": "name", "session": "flower"},
 			error:    false,
 		},
