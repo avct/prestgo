@@ -156,8 +156,6 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 		return nil, sresp.Error
 	}
 
-	time.Sleep(500 * time.Millisecond)
-
 	r := &rows{
 		conn:    s.conn,
 		nextURI: sresp.NextURI,
