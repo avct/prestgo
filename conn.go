@@ -1,8 +1,10 @@
 package prestgo
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -164,8 +166,6 @@ func (s *stmt) Query(args []driver.Value) (driver.Rows, error) {
 		return nil, sresp.Error
 	}
 
-	time.Sleep(500 * time.Millisecond)
-
 	r := &rows{
 		conn:    s.conn,
 		nextURI: sresp.NextURI,
@@ -222,6 +222,12 @@ func (r *rows) fetch() error {
 					r.types[i] = timestampConverter
 				case col.Type == TimestampWithTimezone:
 					r.types[i] = timestampWithTimezoneConverter
+				case col.Type == MapVarchar:
+					r.types[i] = mapVarcharConverter
+				case col.Type == VarBinary:
+					r.types[i] = varbinaryConverter
+				case col.Type == ArrayVarchar:
+					r.types[i] = arrayVarcharConverter
 
 				default:
 					return fmt.Errorf("unsupported column type: %s", col.Type)
@@ -428,4 +434,74 @@ var timestampWithTimezoneConverter = valueConverterFunc(func(val interface{}) (d
 		return ts, nil
 	}
 	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type time.Time", DriverName, val, val)
+})
+
+// varbinaryConverter converts varbinary to a byte slice
+var varbinaryConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	// varbinary values are returned as base64 encoded strings
+	if vv, ok := val.(string); ok {
+		// decode the base64 string into a byte slice
+		dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(vv))
+
+		var buf bytes.Buffer
+		if _, err := io.Copy(&buf, dec); err != nil {
+			return nil, fmt.Errorf("failed to decode base64 string: %s: %s", vv, err)
+		}
+
+		return buf.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type []byte", DriverName, val, val)
+})
+
+// mapVarcharConverter converts a value from map[string]interface{} into a map[string]string.
+var mapVarcharConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	if vv, ok := val.(map[string]interface{}); ok {
+		// All map values should be strings
+		outMap := map[string]string{}
+
+		for k, v := range vv {
+			vstr, ok := v.(string)
+			if !ok {
+				return nil, fmt.Errorf("unexpected non-string value in map<varchar,varchar>: %v", v)
+			}
+			outMap[k] = vstr
+		}
+
+		return outMap, nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type map[string]string", DriverName, val, val)
+})
+
+// arrayVarcharConverter converts a value from the underlying json response into an []string
+var arrayVarcharConverter = valueConverterFunc(func(val interface{}) (driver.Value, error) {
+	if val == nil {
+		return nil, nil
+	}
+
+	if vv, ok := val.([]interface{}); ok {
+		var outSlice []string
+
+		for _, v := range vv {
+			vstr, ok := v.(string)
+			if !ok {
+				return nil, fmt.Errorf("unexpected non-string value in array<varchar>: %v", v)
+			}
+
+			outSlice = append(outSlice, vstr)
+		}
+
+		return outSlice, nil
+	}
+
+	return nil, fmt.Errorf("%s: failed to convert %v (%T) into type []string", DriverName, val, val)
 })
