@@ -1,3 +1,7 @@
+# This driver is now deprecated
+
+Please use [github.com/prestodb/presto-go-client](https://github.com/prestodb/presto-go-client) instead.
+
 # prestgo
 
 A pure [Go](http://golang.org/) database driver for the [Presto](http://prestodb.io/) query engine.
